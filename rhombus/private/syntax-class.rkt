@@ -16,14 +16,14 @@
          Block
          Multi)
 
-(module+ for-macro
-  (provide syntax))
-
 (module+ for-quasiquote
   (provide (for-syntax in-syntax-class-space
                        rhombus-syntax-class?
                        rhombus-syntax-class-kind
                        rhombus-syntax-class-class)))
+                       
+(module+ for-syntax-class-syntax
+  (provide (for-syntax rhombus-syntax-class)))
 
 (begin-for-syntax
   (define in-syntax-class-space (make-interned-syntax-introducer/add 'rhombus/syntax-class))
@@ -38,11 +38,3 @@
 (define-syntax Group (rhombus-syntax-class 'group #f))
 (define-syntax Multi (rhombus-syntax-class 'multi #f))
 (define-syntax Block (rhombus-syntax-class 'block #f))
-
-(define-simple-name-root syntax
-  class)
-
-(define-syntax class
-  (definition-transformer
-    (lambda (stx)
-      (raise-syntax-error 'syntax.class "not supported, yet" stx))))
