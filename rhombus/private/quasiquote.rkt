@@ -54,8 +54,9 @@
                                    handle-maybe-empty-sole-group
                                    handle-maybe-empty-alts handle-maybe-empty-group
                                    #:tail-any-escape? [tail-any-escape? #f]
-                                   #:as-tail? [as-tail? #f])
-  (let convert ([e e] [empty-ok? #f] [depth 0] [as-tail? as-tail?])
+                                   #:as-tail? [as-tail? #f]
+                                   #:splice? [splice? #f])
+  (let convert ([e e] [empty-ok? splice?] [depth 0] [as-tail? as-tail?])
     (syntax-parse e
       #:datum-literals (parens brackets braces block quotes multi group alts)
       [(group
@@ -112,9 +113,12 @@
                 [(and can-be-empty? (eq? (syntax-e #'tag) 'group) (not empty-ok?))
                  (handle-maybe-empty-group #'tag ps idrs)]
                 [else
-                 (values (quasisyntax/loc e (#,(make-datum #'tag) . #,ps))
-                         idrs
-                         can-be-empty?)]))]
+                 (values
+                  (if splice?
+                      (quasisyntax/loc e (~seq . #,ps))
+                      (quasisyntax/loc e (#,(make-datum #'tag) . #,ps)))
+                  idrs
+                  can-be-empty?)]))]
            [(op:tail-repetition)
             #:when (and (zero? depth)
                         (or tail-any-escape?
@@ -152,7 +156,7 @@
       [_
        (values e null #f)])))
 
-(define-for-syntax (convert-pattern e #:as-tail? [as-tail? #f])
+(define-for-syntax (convert-pattern e #:as-tail? [as-tail? #f] #:splice? [splice? #f])
   (define (handle-escape $-id e in-e pack* context-syntax-class kind)
     (syntax-parse e
       #:datum-literals (parens op group)
@@ -211,6 +215,7 @@
         (values #f #f)))
   (convert-syntax e
                   #:as-tail? as-tail?
+                  #:splice? splice?
                   ;; make-datum
                   (lambda (d)
                     #`(~datum #,d))

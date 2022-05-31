@@ -41,6 +41,7 @@
         "private/print.rkt"
         "private/syntax-object.rkt"
         "private/syntax-class.rkt"
+        "private/syntax-class-syntax.rkt"
         "private/for.rkt"
         "private/range.rkt")
 
