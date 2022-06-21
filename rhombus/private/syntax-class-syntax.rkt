@@ -36,11 +36,10 @@
       (syntax-parse stx
         #:datum-literals (alts group quotes block pattern description)
         ;; Classname and patterns shorthand
-        [(form-id class-name (alts alt ...)
-                  . tail)
+        [(form-id class-name (alts alt ...))
          (let-values ([(patterns attributes)
                        (for/lists (patterns attributes
-                                            #:result (values patterns (set->list (list->set (flatten attributes)))))
+                                            #:result (values patterns (apply set-intersect attributes)))
                                   ([alt-stx (in-list (syntax->list #'(alt ...)))])
                          (generate-pattern-and-attributes alt-stx))])
            (list

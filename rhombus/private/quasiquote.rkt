@@ -15,6 +15,7 @@
          "empty-group.rkt"
          "syntax-class.rkt"
          "operator-parse.rkt"
+         (submod "dot.rkt" for-dot-provider)
          (submod "syntax-class.rkt" for-quasiquote)
          (only-in "underscore.rkt"
                   [_ rhombus-_])
@@ -48,6 +49,16 @@
     #:datum-literals (op)
     (pattern (~seq ((~datum group) (op $) e)
                    ((~datum group) (op (~and name rhombus...)))))))
+
+(begin-for-syntax
+  (define-for-syntax (make-pattern-variable-dot-provider attributes)
+    (dot-provider
+     (lambda (form1 dot attr)
+       (hash-ref
+        attributes
+        (syntax-e attr)
+        (lambda ()
+          (error 'template (format "attribute `~a' not found on pattern variable `~a'" (syntax-e attr) (syntax-e form1)))))))))
 
 (define-for-syntax (convert-syntax e make-datum make-literal
                                    handle-escape handle-group-escape handle-multi-escape
@@ -188,12 +199,9 @@
                  ; TODO Determine if id by itself is needed
                  #;(cons #`[id (#,pack* (syntax id) 0)] attribute-bindings)
                  attribute-bindings
-                 (list #`[id (dot-provider
-                              (lambda (form1 dot attr)
-                                (hash-ref
-                                 (hash #,@(apply append (for/list ([b (in-list attribute-mappings)])
-                                                          (list #`(quote #,(car b)) #`(quote-syntax #,(cdr b))))))
-                                 (syntax-e attr))))])))
+                 (list #`[id (make-pattern-variable-dot-provider
+                              (hash #,@(apply append (for/list ([b (in-list attribute-mappings)])
+                                                       (list #`(quote #,(car b)) #`(quote-syntax #,(cdr b)))))))])))
        (define (incompat)
          (raise-syntax-error #f
                              "unknown syntax class or incompatible with this context"
