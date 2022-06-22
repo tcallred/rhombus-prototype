@@ -30,6 +30,19 @@
        (values #`(pattern #,p attr ... ...)
                (map (lambda (binding) (syntax-e (car (syntax->list binding)))) idrs)))]))
 
+(define-for-syntax (generate-syntax-class class-name alts)
+  (let-values ([(patterns attributes)
+                (for/lists (patterns attributes
+                                     #:result (values patterns (apply set-intersect attributes)))
+                           ([alt-stx (in-list alts)])
+                  (generate-pattern-and-attributes alt-stx))])
+    (list
+     #`(begin-for-syntax
+         (define-splicing-syntax-class #,class-name
+           #:datum-literals (block group quotes)
+           #,@patterns))
+     #`(define-syntax #,class-name (rhombus-syntax-class 'term #'#,class-name '#,attributes)))))
+
 (define-syntax class
   (definition-transformer
     (lambda (stx)
@@ -37,27 +50,10 @@
         #:datum-literals (alts group quotes block pattern description)
         ;; Classname and patterns shorthand
         [(form-id class-name (alts alt ...))
-         (let-values ([(patterns attributes)
-                       (for/lists (patterns attributes
-                                            #:result (values patterns (apply set-intersect attributes)))
-                                  ([alt-stx (in-list (syntax->list #'(alt ...)))])
-                         (generate-pattern-and-attributes alt-stx))])
-           (list
-            #`(begin-for-syntax
-                (define-splicing-syntax-class class-name
-                  #:datum-literals (block group quotes)
-                  #,@patterns))
-            #`(define-syntax class-name (rhombus-syntax-class 'term #'class-name '#,attributes))))]
-        ;; Specify patterns with "pattern" keyword (incomplete)
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)))]
+        ;; Specify patterns with "pattern"
         [(form-id class-name
-                  (block (group pattern (alts alt ...)))
-                  . tail)
-         (list
-          #`(begin-for-syntax
-              (define-splicing-syntax-class class-name
-                #:datum-literals (block group quotes)
-                #,@(for/list ([alt-stx (in-list (syntax->list #'(alt ...)))])
-                     (generate-pattern-and-attributes alt-stx))))
-          #'(define-syntax class-name (rhombus-syntax-class 'term #'class-name)))]
+                  (block (group pattern (alts alt ...))))
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)))]
         [_
          (raise-syntax-error #f "expected alternatives" stx)]))))
