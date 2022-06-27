@@ -4,8 +4,9 @@
                      shrubbery/print
                      "operator-parse.rkt"
                      "srcloc.rkt"
-                     (submod "dot.rkt" for-dot-provider))
-         (for-meta 2 racket/base (submod "dot.rkt" for-dot-provider))
+                     (submod "dot.rkt" for-dot-provider)
+                     "expression.rkt")
+         (for-meta 2 racket/base syntax/parse "expression.rkt")
          syntax/parse
          "parse.rkt"
          "expression.rkt"
@@ -51,14 +52,24 @@
                    ((~datum group) (op (~and name rhombus...)))))))
 
 (begin-for-syntax
-  (define-for-syntax (make-pattern-variable-dot-provider attributes)
-    (dot-provider
-     (lambda (form1 dot attr)
-       (hash-ref
-        attributes
-        (syntax-e attr)
-        (lambda ()
-          (error 'template (format "attribute `~a' not found on pattern variable `~a'" (syntax-e attr) (syntax-e form1)))))))))
+  (define-for-syntax (make-pattern-variable-syntax temp-id attributes)
+    (expression-prefix-operator
+     #'pattern-var
+     '((default . stronger))
+     'macro
+     (lambda (stx)
+       (syntax-parse stx
+         #:datum-literals (op)
+         [(var-id (op |.|) attr)
+          (values
+           (hash-ref
+            attributes
+            (syntax->datum #'attr)
+            (lambda ()
+              (error 'template (format "attribute `~a' not found on pattern variable `~a'" (syntax->datum #'attr) (syntax->datum #'var-id)))))
+           #'())]
+         [(var-id)
+          (values temp-id #'())])))))
 
 (define-for-syntax (convert-syntax e make-datum make-literal
                                    handle-escape handle-group-escape handle-multi-escape
@@ -185,6 +196,7 @@
        (define rsc (syntax-local-value (in-syntax-class-space #'stx-class) (lambda () #f)))
        (define (compat pack*)
          (define sc (rhombus-syntax-class-class rsc))
+         (define temp-id (car (generate-temporaries (list #'id))))
          (define-values (attribute-bindings attribute-mappings)
            (for/lists (bindings mappings)
                       ([attr (rhombus-syntax-class-attributes rsc)]
@@ -196,10 +208,9 @@
          (values (if sc
                      #`(~var id #,sc)
                      #'id)
-                 ; TODO Determine if id by itself is needed
-                 #;(cons #`[id (#,pack* (syntax id) 0)] attribute-bindings)
-                 attribute-bindings
-                 (list #`[id (make-pattern-variable-dot-provider
+                 (cons #`[#,temp-id (#,pack* (syntax id) 0)] attribute-bindings)
+                 (list #`[id (make-pattern-variable-syntax
+                              (quote-syntax #,temp-id)
                               (hash #,@(apply append (for/list ([b (in-list attribute-mappings)])
                                                        (list #`(quote #,(car b)) #`(quote-syntax #,(cdr b)))))))])))
        (define (incompat)
