@@ -227,12 +227,12 @@
          [(eq? (rhombus-syntax-class-kind rsc) 'term)
           (cond
             [(not (eq? kind 'term))
-             (values #f #f)]
+             (values #f #f #f)]
             [else (compat pack*)])]
          [(eq? (rhombus-syntax-class-kind rsc) 'group)
           (cond
             [(eq? kind 'term) (incompat)]
-            [(not (eq? kind 'group)) (values #f #f)]
+            [(not (eq? kind 'group)) (values #f #f #f)]
             [else (compat pack*)])]
          [(eq? (rhombus-syntax-class-kind rsc) 'multi)
           (cond
