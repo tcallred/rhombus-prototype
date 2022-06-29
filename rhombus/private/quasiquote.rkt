@@ -295,6 +295,7 @@
                                           (_ . #,(syntax-parse pat
                                                    [(_ . tail) #'tail]))))
                             idrs
+                            null
                             #f))
                   ;; handle-maybe-empty-alts
                   (lambda (tag ps idrs)
@@ -304,12 +305,13 @@
                                           ;; sets all pattern variables to nested empties:
                                           (_ . #,ps)))
                             idrs
+                            null
                             #t))
                   ;; handle-maybe-empty-group
                   (lambda (tag ps idrs)
                     ;; the `(tag . ps)` could match `(group)`, but it just never will,
                     ;; because that won't be an input
-                    (values #`((~datum #,tag) . #,ps) idrs #t))))
+                    (values #`((~datum #,tag) . #,ps) idrs null #t))))
 
 
 (define-for-syntax (convert-template e
@@ -327,18 +329,18 @@
                       ; TODO fix how check-escape works
                       #;(check-escape e)
                       (define id (car (generate-temporaries (list e))))
-                      (values id (list #`[#,id (unpack-term* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) '()))
+                      (values id (list #`[#,id (unpack-term* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) null))
                     ;; handle-group-escape:
                     (lambda ($-id e in-e)
                       #;(check-escape e)
                       (define id (car (generate-temporaries (list e))))
-                      (values id (list #`[#,id (unpack-group* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) '()))
+                      (values id (list #`[#,id (unpack-group* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) null))
                     ;; handle-multi-escape:
                     (lambda ($-id e in-e)
                       #;(check-escape e)
                       (define id (car (generate-temporaries (list e))))
                       (with-syntax ([(tag . _) in-e])
-                        (values #`(tag . #,id) (list #`[#,id (unpack-multi* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) '())))
+                        (values #`(tag . #,id) (list #`[#,id (unpack-multi* (quote-syntax #,$-id) (#,rhombus-expression (group #,e)) 0)]) null)))
                     ;; deepen-escape
                     (lambda (idr)
                       (syntax-parse idr
@@ -350,11 +352,11 @@
                     ;; handle-tail-escape:
                     (lambda (name e in-e)
                       (define id (car (generate-temporaries (list e))))
-                      (values id (list #`[#,id (unpack-tail* '#,name (#,rhombus-expression (group #,e)) 0)]) '()))
+                      (values id (list #`[#,id (unpack-tail* '#,name (#,rhombus-expression (group #,e)) 0)]) null))
                     ;; handle-block-tail-escape:
                     (lambda (name e in-e)
                       (define id (car (generate-temporaries (list e))))
-                      (values id (list #`[#,id (unpack-multi* '#,name (#,rhombus-expression (group #,e)) 0)]) '()))
+                      (values id (list #`[#,id (unpack-multi* '#,name (#,rhombus-expression (group #,e)) 0)]) null))
                     ;; handle-maybe-empty-sole-group
                     (lambda (tag template idrs)
                       ;; if `template` generates `(group)`, then instead of `(tag (group))`,
@@ -364,7 +366,7 @@
                               (cons #`[(#,id (... ...))
                                        (convert-empty-group 0 (#,(quote-syntax quasisyntax) #,template))]
                                     idrs)
-                              '()
+                              null
                               #f))
                     ;; handle-maybe-empty-alts
                     (lambda (tag ts idrs)
@@ -373,7 +375,7 @@
                       (values id
                               (cons #`[#,id (convert-empty-alts 0 (#,(quote-syntax quasisyntax) (#,tag . #,ts)))]
                                     idrs)
-                              '()
+                              null
                               #f))
                     ;; handle-maybe-empty-group
                     (lambda (tag ts idrs)
@@ -382,7 +384,7 @@
                       (values id
                               (cons #`[#,id (error-empty-group 0 (#,(quote-syntax quasisyntax) (#,tag . #,ts)))]
                                     idrs)
-                              '()
+                              null
                               #f))))
   (define (wrap-bindings idrs body)
     (cond

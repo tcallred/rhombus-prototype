@@ -141,7 +141,9 @@
          (define-values (converted-info-pattern info-idrs info-sidrs info-can-be-empty?) (convert-pattern #'info-pattern))
          (define-values (converted-data-pattern data-idrs data-sidrs data-can-be-empty?) (convert-pattern #'data-pattern))
          (with-syntax ([((info-id info-id-ref) ...) info-idrs]
-                       [((data-id data-id-ref) ...) data-idrs])
+                       [((info-sid info-sid-ref) ...) info-sidrs]
+                       [((data-id data-id-ref) ...) data-idrs]
+                       [((data-sid data-sid-ref) ...) data-sidrs])
            (list
             #`(define-syntax (infoer-id stx)
                 (syntax-parse stx
@@ -153,8 +155,10 @@
                          (let ([arg-id #'arg-id]
                                [info-id info-id-ref] ...
                                [data-id data-id-ref] ...)
-                           (pack-info
-                            (rhombus-body-at block-tag body ...)))])])]))))]))))
+                           (let-syntax ([info-sid info-sid-ref] ...
+                                        [data-sid data-sid-ref] ...)
+                             (pack-info
+                              (rhombus-body-at block-tag body ...))))])])]))))]))))
 
 (define-syntax matcher
   (definition-transformer
@@ -169,9 +173,9 @@
                                          (group (op $) success-id:identifier)
                                          (group (op $) fail-id:identifier))))
                   ((~and block-tag block) body ...))
-          ; TODO Include sidrs below?
          (define-values (converted-pattern idrs sidrs can-be-empty?) (convert-pattern #'data-pattern))
-         (with-syntax ([((id id-ref) ...) idrs])
+         (with-syntax ([((id id-ref) ...) idrs]
+                       [((sid sid-ref) ...) sidrs])
            (list
             #`(define-syntax (builder-id stx)
                 (syntax-parse stx
@@ -179,13 +183,14 @@
                    (syntax-parse #'(group data)
                      [#,converted-pattern
                       (let ([id id-ref] ... [arg-id #'arg-id])
-                        (let ([IF-id #'if-bridge])
-                          (let ([success-id #'(parsed success)]
-                                ;; putting `if-bridge` in `fail-id`
-                                ;; helps make sure it's used correctly
-                                [fail-id #'(parsed (if-bridge IF fail))])
-                            (unwrap-block
-                             (rhombus-body-at block-tag body ...)))))])]))))]))))
+                        (let-syntax ([sid sid-ref] ...)
+                          (let ([IF-id #'if-bridge])
+                            (let ([success-id #'(parsed success)]
+                                  ;; putting `if-bridge` in `fail-id`
+                                  ;; helps make sure it's used correctly
+                                  [fail-id #'(parsed (if-bridge IF fail))])
+                              (unwrap-block
+                               (rhombus-body-at block-tag body ...))))))])]))))]))))
 
 (define-syntax if-bridge
   ;; depending on `IF`, `if-bridge` will be used in an expression
@@ -259,8 +264,10 @@
                                  (parens (group (op $) arg-id:identifier)
                                          data-pattern)))
                   ((~and block-tag block) body ...))
-         (define-values (converted-data-pattern data-idrs data-can-be-empty?) (convert-pattern #'data-pattern))
-         (with-syntax ([((data-id data-id-ref) ...) data-idrs])
+         (define-values (converted-data-pattern data-idrs data-sidrs data-can-be-empty?)
+           (convert-pattern #'data-pattern))
+         (with-syntax ([((data-id data-id-ref) ...) data-idrs]
+                       [((data-sid data-sid-ref) ...) data-sidrs])
            (list
             #`(define-syntax (builder-id stx)
                 (syntax-parse stx
@@ -269,8 +276,9 @@
                      [#,converted-data-pattern
                       (let ([arg-id #'arg-id]
                             [data-id data-id-ref] ...)
-                        (unwrap-block
-                         (rhombus-body-at block-tag body ...)))])]))))]))))
+                        (let-syntax ([data-sid data-sid-ref] ...)
+                          (unwrap-block
+                           (rhombus-body-at block-tag body ...))))])]))))]))))
 
 (define-for-syntax (unwrap-block stx)
   #`(rhombus-body-sequence #,@(unpack-multi stx 'bin.binder)))
@@ -306,7 +314,7 @@
   (binding-prefix-operator
    name
    prec
-   protocol 
+   protocol
    (if (eq? protocol 'macro)
        (lambda (tail)
          (define-values (form new-tail) (syntax-parse tail
