@@ -66,7 +66,14 @@
             attributes
             (syntax->datum #'attr)
             (lambda ()
-              (error 'template (format "attribute `~a' not found on pattern variable `~a'" (syntax->datum #'attr) (syntax->datum #'var-id)))))
+              (raise-syntax-error #f
+                                  (format
+                                   (string-append "attribute not found\n"
+                                                  "  pattern: ~a\n"
+                                                  "  attribute: ~a")
+                                   (syntax-e #'var-id)
+                                   (syntax-e #'attr))
+                                  stx)))
            #'())]
          [(var-id)
           (values temp-id #'())])))))
