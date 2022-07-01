@@ -3,7 +3,10 @@
                      syntax/parse
                      enforest/transformer
                      "consistent.rkt"
-                     "infer-name.rkt")
+                     "infer-name.rkt"
+                     (for-syntax racket/base
+                                 syntax/parse)
+                     "syntax-rhs.rkt")
          "definition.rkt"
          "binding.rkt"
          "expression.rkt"
@@ -75,9 +78,7 @@
                                       (syntax->list #'(q.g ...))
                                       (syntax->list #'(rhs ...))
                                       in-expression-space
-                                      #'make-expression-prefix-operator
-                                      #'make-expression-infix-operator
-                                      #'expression-prefix+infix-operator)))]
+                                      #'rules-rhs)))]
        [(form-id q::operator-syntax-quote
                  (~and rhs (block body ...)))
         (list
@@ -86,11 +87,25 @@
                                      #'q.g
                                      #'rhs
                                      in-expression-space
-                                     #'make-expression-prefix-operator
-                                     #'make-expression-infix-operator)))]
+                                     #'rule-rhs)))]
        [(form-id any ...+ (~and rhs (block body ...)))
         (build-value-definitions #'form-id #'(group any ...) #'rhs
                                  wrap-definition)]))))
 
 (define-syntax rhombus-define
   (make-define (lambda (defn) defn)))
+
+(begin-for-syntax
+  (define-syntax (rules-rhs stx)
+    (syntax-parse stx
+      [(_ orig-stx pre-parsed ...)
+       (parse-operator-definitions-rhs #'orig-stx (syntax->list #'(pre-parsed ...))
+                                       #'make-expression-prefix-operator
+                                       #'make-expression-infix-operator
+                                       #'expression-prefix+infix-operator)]))
+  (define-syntax (rule-rhs stx)
+    (syntax-parse stx
+      [(_ pre-parsed)
+       (parse-operator-definition-rhs #'pre-parsed
+                                      #'make-expression-prefix-operator
+                                      #'make-expression-infix-operator)])))
