@@ -24,7 +24,7 @@
                        rhombus-syntax-class-attributes)))
                        
 (module+ for-syntax-class-syntax
-  (provide (for-syntax rhombus-syntax-class)))
+  (provide (for-syntax rhombus-syntax-class in-syntax-class-space)))
 
 (begin-for-syntax
   (define in-syntax-class-space (make-interned-syntax-introducer/add 'rhombus/syntax-class))

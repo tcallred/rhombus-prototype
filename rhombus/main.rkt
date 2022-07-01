@@ -48,6 +48,7 @@
         "private/syntax-object.rkt"
         "private/syntax-class.rkt"
         "private/syntax-class-syntax.rkt"
+        "private/begin-for-meta.rkt"
         "private/for.rkt"
         "private/range.rkt")
 

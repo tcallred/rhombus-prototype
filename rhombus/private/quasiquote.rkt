@@ -4,7 +4,6 @@
                      shrubbery/print
                      "operator-parse.rkt"
                      "srcloc.rkt"
-                     (submod "dot.rkt" for-dot-provider)
                      "expression.rkt")
          (for-meta 2 racket/base syntax/parse "expression.rkt")
          syntax/parse
@@ -16,7 +15,6 @@
          "empty-group.rkt"
          "syntax-class.rkt"
          "operator-parse.rkt"
-         (submod "dot.rkt" for-dot-provider)
          (submod "syntax-class.rkt" for-quasiquote)
          (only-in "underscore.rkt"
                   [_ rhombus-_])
@@ -47,32 +45,31 @@
     (pattern (~seq ((~datum group) (op $) e)
                    ((~datum group) (op (~and name rhombus...)))))))
 
-(begin-for-syntax
-  (define-for-syntax (make-pattern-variable-syntax temp-id attributes)
-    (expression-prefix-operator
-     #'pattern-var
-     '((default . stronger))
-     'macro
-     (lambda (stx)
-       (syntax-parse stx
-         #:datum-literals (op)
-         [(var-id (op |.|) attr)
-          (values
-           (hash-ref
-            attributes
-            (syntax->datum #'attr)
-            (lambda ()
-              (raise-syntax-error #f
-                                  (format
-                                   (string-append "attribute not found\n"
-                                                  "  pattern: ~a\n"
-                                                  "  attribute: ~a")
-                                   (syntax-e #'var-id)
-                                   (syntax-e #'attr))
-                                  stx)))
-           #'())]
-         [(var-id)
-          (values temp-id #'())])))))
+(define-for-syntax (make-pattern-variable-syntax temp-id attributes)
+  (expression-prefix-operator
+   #'pattern-var
+   '((default . stronger))
+   'macro
+   (lambda (stx)
+     (syntax-parse stx
+       #:datum-literals (op)
+       [(var-id (op |.|) attr)
+        (values
+         (hash-ref
+          attributes
+          (syntax->datum #'attr)
+          (lambda ()
+            (raise-syntax-error #f
+                                (format
+                                 (string-append "attribute not found\n"
+                                                "  pattern: ~a\n"
+                                                "  attribute: ~a")
+                                 (syntax-e #'var-id)
+                                 (syntax-e #'attr))
+                                stx)))
+         #'())]
+       [(var-id)
+        (values temp-id #'())]))))
 
 (define-for-syntax (convert-syntax e make-datum make-literal
                                    handle-escape handle-group-escape handle-multi-escape

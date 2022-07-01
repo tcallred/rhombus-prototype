@@ -37,11 +37,10 @@
                            ([alt-stx (in-list alts)])
                   (generate-pattern-and-attributes alt-stx))])
     (list
-     #`(begin-for-syntax
-         (define-splicing-syntax-class #,class-name
-           #:datum-literals (block group quotes)
-           #,@patterns))
-     #`(define-syntax #,class-name (rhombus-syntax-class 'term #'#,class-name '#,attributes)))))
+     #`(define-splicing-syntax-class #,class-name
+         #:datum-literals (block group quotes)
+         #,@patterns)
+     #`(define-syntax #,(in-syntax-class-space class-name) (rhombus-syntax-class 'term #'#,class-name '#,attributes)))))
 
 (define-syntax class
   (definition-transformer
