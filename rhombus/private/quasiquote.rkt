@@ -413,7 +413,8 @@
 
 (define-for-syntax ((convert-pattern/generate-match repack-id) e)
   (define-values (pattern idrs sidrs can-be-empty?) (convert-pattern e))
-  (with-syntax ([((id id-ref) ...) idrs])
+  (with-syntax ([((id id-ref) ...) idrs]
+                [((sid sid-ref) ...) sidrs])
     (with-syntax ([(tmp-id ...) (generate-temporaries #'(id ...))])
       (binding-form
        #'syntax-infoer
@@ -422,7 +423,9 @@
           #,repack-id
           (tmp-id ...)
           (id ...)
-          (id-ref ...))))))
+          (id-ref ...)
+          (sid ...)
+          (sid-ref ...))))))
 
 (define-syntax #%quote
   (make-expression+binding-prefix-operator
@@ -468,18 +471,18 @@
 
 (define-syntax (syntax-infoer stx)
   (syntax-parse stx
-    [(_ static-infos (annotation-str pattern repack tmp-ids (id ...) id-refs))
+    [(_ static-infos (annotation-str pattern repack tmp-ids (id ...) id-refs (sid ...) sid-refs))
      (binding-info #'annotation-str
                    #'syntax
                    #'()
                    #'((id) ...)
                    #'syntax-matcher
                    #'syntax-binder
-                   #'(pattern repack tmp-ids (id ...) id-refs))]))
+                   #'(pattern repack tmp-ids (id ...) id-refs (sid ...) sid-refs))]))
 
 (define-syntax (syntax-matcher stx)
   (syntax-parse stx
-    [(_ arg-id (pattern repack (tmp-id ...) (id ...) (id-ref ...)) IF success fail)
+    [(_ arg-id (pattern repack (tmp-id ...) (id ...) (id-ref ...) (sid ...) (sid-ref ...)) IF success fail)
      #'(IF (syntax? arg-id)
            (begin
              (define-values (match? tmp-id ...)
@@ -493,9 +496,10 @@
 
 (define-syntax (syntax-binder stx)
   (syntax-parse stx
-    [(_ arg-id (pattern repack (tmp-id ...) (id ...) (id-ref ...)))
+    [(_ arg-id (pattern repack (tmp-id ...) (id ...) (id-ref ...) (sid ...) (sid-ref ...)))
      #'(begin
-         (define id tmp-id) ...)]))
+         (define id tmp-id) ...
+         (define-syntax sid sid-ref) ...)]))
 
 (define-syntax $
   (expression-prefix-operator
