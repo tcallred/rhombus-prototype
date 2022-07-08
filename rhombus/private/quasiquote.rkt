@@ -117,13 +117,13 @@
            (syntax-parse gs
              [(g . gs)
               (define-values (p new-ids new-sidrs nested-can-be-empty?) (convert #'g #f a-depth #f))
-              (loop #'gs new-ids (append (or pend-idrs '()) idrs) new-sidrs (cons p ps) (and can-be-empty? (not pend-idrs)) #f depth)]))
+              (loop #'gs new-ids (append (or pend-idrs '()) idrs) (append new-sidrs sidrs) (cons p ps) (and can-be-empty? (not pend-idrs)) #f depth)]))
          (define (simple2 gs a-depth)
            (syntax-parse gs
              [(g0 g1 . gs)
               (define-values (p0 new-ids0 new-sids0 nested-can-be-empty?0) (convert #'g0 #f a-depth #f))
               (define-values (p1 new-ids1 new-sids1 nested-can-be-empty?1) (convert #'g1 #f a-depth #f))
-              (loop #'gs (append new-ids0 new-ids1) (append (or pend-idrs '()) idrs) (append new-sids0 new-sids1) (list* p1 p0 ps) (and can-be-empty? (not pend-idrs)) #f depth)]))
+              (loop #'gs (append new-ids0 new-ids1) (append (or pend-idrs '()) idrs) (append new-sids0 new-sids1 sidrs) (list* p1 p0 ps) (and can-be-empty? (not pend-idrs)) #f depth)]))
          (syntax-parse gs
            [()
             (let ([ps (let ([ps (reverse ps)])
@@ -134,9 +134,9 @@
                   [can-be-empty? (and can-be-empty? (not pend-idrs))])
               (cond
                 [(and can-be-empty? (eq? (syntax-e #'tag) 'alts))
-                 (handle-maybe-empty-alts #'tag ps idrs)]
+                 (handle-maybe-empty-alts #'tag ps idrs sidrs)]
                 [(and can-be-empty? (eq? (syntax-e #'tag) 'group) (not empty-ok?))
-                 (handle-maybe-empty-group #'tag ps idrs)]
+                 (handle-maybe-empty-group #'tag ps idrs sidrs)]
                 [else
                  (values
                   (if splice?
@@ -150,13 +150,13 @@
                         (or tail-any-escape?
                             (identifier? #'op.e)))
             (define-values (id new-idrs new-sidrs) (handle-tail-escape #'op.name #'op.e e))
-            (loop #'() #f (append new-idrs (or pend-idrs '()) idrs) sidrs ps (and can-be-empty? (not pend-idrs)) id depth)]
+            (loop #'() #f (append new-idrs (or pend-idrs '()) idrs) (append new-sidrs sidrs) ps (and can-be-empty? (not pend-idrs)) id depth)]
            [(op:block-tail-repetition)
             #:when (and (zero? depth)
                         (or tail-any-escape?
                             (identifier? #'op.e)))
             (define-values (id new-idrs new-sidrs) (handle-block-tail-escape #'op.name #'op.e e))
-            (loop #'() #f (append new-idrs (or pend-idrs '()) idrs) sidrs ps (and can-be-empty? (not pend-idrs)) id depth)]
+            (loop #'() #f (append new-idrs (or pend-idrs '()) idrs) (append new-sidrs sidrs) ps (and can-be-empty? (not pend-idrs)) id depth)]
            [(op:list-repetition . gs)
             #:when (zero? depth)
             (unless pend-idrs
@@ -187,7 +187,7 @@
     (syntax-parse e
       #:datum-literals (parens op group)
       #:literals (rhombus-_ ::)
-      [rhombus-_ (values #'_ null)]
+      [rhombus-_ (values #'_ null null)]
       [_:identifier
        #:with (tag . _) in-e
        (let ([temp (car (generate-temporaries #'(#,e)))])
@@ -298,20 +298,20 @@
                             null
                             #f))
                   ;; handle-maybe-empty-alts
-                  (lambda (tag ps idrs)
+                  (lambda (tag ps idrs sidrs)
                     ;; if `(tag . ps)` would match `(alts)`, then let it match `(block)`
                     (values #`(~or* ((~datum #,tag) . #,ps)
                                     (~and ((~datum block))
                                           ;; sets all pattern variables to nested empties:
                                           (_ . #,ps)))
                             idrs
-                            null
+                            sidrs
                             #t))
                   ;; handle-maybe-empty-group
-                  (lambda (tag ps idrs)
+                  (lambda (tag ps idrs sidrs)
                     ;; the `(tag . ps)` could match `(group)`, but it just never will,
                     ;; because that won't be an input
-                    (values #`((~datum #,tag) . #,ps) idrs null #t))))
+                    (values #`((~datum #,tag) . #,ps) idrs sidrs #t))))
 
 
 (define-for-syntax (convert-template e
