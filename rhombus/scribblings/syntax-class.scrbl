@@ -3,7 +3,7 @@
     "util.rhm" open
     "common.rhm" open)
 
-@title[~tag: "syntax"]{Syntax Classes}
+@title[~tag: "syntax-classes"]{Syntax Classes}
 
 In a rhombus syntax form, pattern variables escaped with @rhombus[$] and surrounded by parentheses
 can be annotated with a syntax class name using @rhombus[::] to specify the kind of
@@ -17,11 +17,11 @@ syntax the pattern variable can match on. Rhombus has several built-in syntax cl
 Rhombus also supports user-defined syntax classes that can annotate pattern 
 variables in the same way. Custom syntax classes are useful for defining resusable patterns that can vary.
 To define a syntax class, use the @rhombus[stx_class] special form with a block that 
-contains the form @rhombus[patterns] followed by alternatives. 
+contains the form @rhombus[pattern] followed by alternatives. 
 
 @(rhombusblock:
     stx_class Arithmetic:
-        patterns
+        pattern
         | '$x + $y'
         | '$x - $y'
 )
@@ -32,6 +32,15 @@ Or, use a shorthand syntax that omits the use of @rhombus[patterns].
     stx_class Arithmetic
     | '$x + $y'
     | '$x - $y'
+)
+
+To use a syntax class definion for a macro, place it inside a @rhombus[begin_for_meta] block.
+
+@(rhombusblock:
+    begin_for_meta:
+        stx_class Arithmetic
+        | '$x + $y'
+        | '$x - $y'
 )
 
 The patterns of a syntax class are defined with quasiquoted syntax objects (@rhombus[''])
@@ -67,8 +76,8 @@ referred to with dot-notation.
     | '$x + $y + $z'
     | '$x - $y'
 
-    val '$(expr: Arithmetic)': '1 + 2 + 3' // matches successfully
-    expr.y // expands to: 2
+    val '$(expr :: Arithmetic)': '1 + 2 + 3' // matches successfully
+    expr.y // expands to: '2'
     expr.z // error: attribute "z" not found
 )
 
