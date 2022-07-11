@@ -40,7 +40,8 @@
      #`(define-splicing-syntax-class #,class-name
          #:datum-literals (block group quotes)
          #,@patterns)
-     #`(define-syntax #,(in-syntax-class-space class-name) (rhombus-syntax-class 'term #'#,class-name '#,attributes)))))
+     #`(define-syntax #,(in-syntax-class-space class-name)
+         (rhombus-syntax-class 'term #'#,class-name '#,attributes #f)))))
 
 (define-syntax class
   (definition-transformer

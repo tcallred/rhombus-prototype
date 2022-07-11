@@ -104,7 +104,7 @@
        ;; can be empty, allow a match/construction with zero groups
        (define-values (p new-idrs new-sidrs can-be-empty?) (convert #'g #t depth as-tail?))
        (if can-be-empty?
-           (handle-maybe-empty-sole-group #'tag p new-idrs)
+           (handle-maybe-empty-sole-group #'tag p new-idrs new-sidrs)
            (values (quasisyntax/loc e (#,(make-datum #'tag) #,p))
                    new-idrs
                    new-sidrs
@@ -205,10 +205,11 @@
                (datum->syntax #'id (string->symbol (format "~a.~a" (syntax-e #'id) attr))))
              (values #`[#,temp-attr (#,pack* (syntax #,id-with-attr) 0)]
                      (cons attr temp-attr))))
+         (define pack-depth (if (rhombus-syntax-class-built-in? rsc) 0 1))
          (values (if sc
                      #`(~var id #,sc)
                      #'id)
-                 (cons #`[#,temp-id (#,pack* (syntax id) 1)] attribute-bindings)
+                 (cons #`[#,temp-id (#,pack* (syntax id) pack-depth)] attribute-bindings)
                  (list #`[id (make-pattern-variable-syntax
                               (quote-syntax #,temp-id)
                               (hash #,@(apply append (for/list ([b (in-list attribute-mappings)])
@@ -286,7 +287,7 @@
                   (lambda (name e in-e)
                     (values e (list #`[#,e (pack-multi* (syntax #,e) 0)]) null))
                   ;; handle-maybe-empty-sole-group
-                  (lambda (tag pat idrs)
+                  (lambda (tag pat idrs sidrs)
                     ;; `pat` matches a `group` form that's supposed to be under `tag`,
                     ;; but if `pat` match `(group)`, then allow an overall match to `(tag)`
                     (values #`(~or* ((~datum #,tag) #,pat)
@@ -295,7 +296,7 @@
                                           (_ . #,(syntax-parse pat
                                                    [(_ . tail) #'tail]))))
                             idrs
-                            null
+                            sidrs
                             #f))
                   ;; handle-maybe-empty-alts
                   (lambda (tag ps idrs sidrs)
@@ -358,7 +359,7 @@
                       (define id (car (generate-temporaries (list e))))
                       (values id (list #`[#,id (unpack-multi* '#,name (#,rhombus-expression (group #,e)) 0)]) null))
                     ;; handle-maybe-empty-sole-group
-                    (lambda (tag template idrs)
+                    (lambda (tag template idrs sidrs)
                       ;; if `template` generates `(group)`, then instead of `(tag (group))`,
                       ;; produce `(tag)`
                       (define id (car (generate-temporaries '(group))))
@@ -366,25 +367,25 @@
                               (cons #`[(#,id (... ...))
                                        (convert-empty-group 0 (#,(quote-syntax quasisyntax) #,template))]
                                     idrs)
-                              null
+                              sidrs
                               #f))
                     ;; handle-maybe-empty-alts
-                    (lambda (tag ts idrs)
+                    (lambda (tag ts idrs sidrs)
                       ;; if `(tag . ts)` generates `(alts)`, then produce `(block)` instead
                       (define id (car (generate-temporaries '(alts))))
                       (values id
                               (cons #`[#,id (convert-empty-alts 0 (#,(quote-syntax quasisyntax) (#,tag . #,ts)))]
                                     idrs)
-                              null
+                              sidrs
                               #f))
                     ;; handle-maybe-empty-group
-                    (lambda (tag ts idrs)
+                    (lambda (tag ts idrs sidrs)
                       ;; if `(tag . ts)` generates `(group)`, then error
                       (define id (car (generate-temporaries '(group))))
                       (values id
                               (cons #`[#,id (error-empty-group 0 (#,(quote-syntax quasisyntax) (#,tag . #,ts)))]
                                     idrs)
-                              null
+                              sidrs
                               #f))))
   (define (wrap-bindings idrs body)
     (cond
