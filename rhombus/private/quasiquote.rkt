@@ -209,7 +209,7 @@
          (values (if sc
                      #`(~var id #,sc)
                      #'id)
-                 (cons #`[#,temp-id (#,pack* (syntax id) pack-depth)] attribute-bindings)
+                 (cons #`[#,temp-id (#,pack* (syntax id) #,pack-depth)] attribute-bindings)
                  (list #`[id (make-pattern-variable-syntax
                               (quote-syntax #,temp-id)
                               (hash #,@(apply append (for/list ([b (in-list attribute-mappings)])
