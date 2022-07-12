@@ -31,6 +31,7 @@
   
   grammar maybe_result_annotation:
     :: $annotation
+    -: $annotation
     $$("ϵ")
 ]{
 
