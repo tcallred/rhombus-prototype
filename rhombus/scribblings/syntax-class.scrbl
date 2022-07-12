@@ -5,19 +5,21 @@
 
 @title[~tag: "syntax-classes"]{Syntax Classes}
 
-In a rhombus syntax form, pattern variables escaped with @rhombus[$] and surrounded by parentheses
-can be annotated with a syntax class name using @rhombus[::] to specify the kind of
-syntax the pattern variable can match on. Rhombus has several built-in syntax classes such as 
-@rhombus[Term], @rhombus[Group], and @rhombus[Multi].
+In a Rhombus syntax form, pattern variables escaped with @rhombus[$] and 
+surrounded by parenthesescan be annotated with a syntax class name using 
+@rhombus[::] to specify the kind of syntax the pattern variable can match on. 
+Rhombus has several built-in syntax classes such as @rhombus[Term], 
+@rhombus[Group], and @rhombus[Multi].
 
 @(rhombusblock:
     val '$(x :: Term)': '1'
 )
 
 Rhombus also supports user-defined syntax classes that can annotate pattern 
-variables in the same way. Custom syntax classes are useful for defining resusable patterns that can vary.
-To define a syntax class, use the @rhombus[stx_class] special form with a block that 
-contains the form @rhombus[pattern] followed by alternatives. 
+variables in the same way. Custom syntax classes are useful for defining 
+resusable patterns that can vary. To define a syntax class, use the 
+@rhombus[stx_class] special form with a block that contains the form 
+@rhombus[pattern] followed by alternatives. 
 
 @(rhombusblock:
     stx_class Arithmetic:
@@ -26,7 +28,7 @@ contains the form @rhombus[pattern] followed by alternatives.
         | '$x - $y'
 )
 
-Or, use a shorthand syntax that omits the use of @rhombus[patterns].
+Or, use a shorthand syntax that omits the use of @rhombus[pattern].
 
 @(rhombusblock:
     stx_class Arithmetic
@@ -34,7 +36,8 @@ Or, use a shorthand syntax that omits the use of @rhombus[patterns].
     | '$x - $y'
 )
 
-To use a syntax class definion for a macro, place it inside a @rhombus[begin_for_meta] block.
+To use a syntax class definion for a macro, place it inside a 
+@rhombus[begin_for_meta] block.
 
 @(rhombusblock:
     begin_for_meta:
@@ -57,8 +60,9 @@ of one of the specified pattern alternatives.
     add_one_to_expr 2 > 3 // error, "expected Arithmetic"
 )
 
-The @rhombus[$]-escaped variables in a syntax class's patterns will bind to matched syntax 
-as attributes of the class. They can be accessed from a pattern variable using dot-notation. 
+The @rhombus[$]-escaped variables in a syntax class's patterns will bind to 
+matched syntax as attributes of the class. They can be accessed from a pattern 
+variable using dot-notation. 
 
 @(rhombusblock:
     expr.macro 'right_operand $(expr :: Arithmetic)':
@@ -68,8 +72,8 @@ as attributes of the class. They can be accessed from a pattern variable using d
     right_operand 8 - 4 // expands to: 4
 )
 
-Attributes of a syntax class must appear in every pattern alternative in order to be
-referred to with dot-notation.
+Attributes of a syntax class must appear in every pattern alternative in order 
+to be referred to with dot-notation.
 
 @(rhombusblock:
     stx_class Arithmetic
@@ -81,5 +85,5 @@ referred to with dot-notation.
     expr.z // error: attribute "z" not found
 )
 
-In other words, the attributes of a syntax class are defined by the intersection of all escaped pattern 
-variables found in the pattern alternatives. 
+In other words, the attributes of a syntax class are defined by the intersection 
+of all escaped pattern variables found in the pattern alternatives. 
