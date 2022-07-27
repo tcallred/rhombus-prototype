@@ -64,7 +64,7 @@
                   (generate-pattern-and-attributes alt-stx))])
     (list
      #`(define-splicing-syntax-class #,class-name
-         #:description #,(syntax-e description) 
+         #:description #,(if description #`(rhombus-body #,description) #f)
          #:datum-literals (block group quotes)
          #,@patterns)
      #`(define-syntax #,(in-syntax-class-space class-name)
@@ -77,13 +77,12 @@
         #:datum-literals (alts group quotes block pattern description)
         ;; Classname and patterns shorthand
         [(form-id class-name (alts alt ...))
-         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) #'#f)]
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) #f)]
         ;; Specify patterns with "pattern"
         [(form-id class-name
                   (block
-                   (~optional (group description (block (group class-desc)))
-                              #:defaults ([class-desc #'#f]))
+                   (~optional (group description (block class-desc)))
                    (group pattern (alts alt ...))))
-         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) #'class-desc)]
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) (attribute class-desc))]
         [_
          (raise-syntax-error #f "expected alternatives" stx)]))))
