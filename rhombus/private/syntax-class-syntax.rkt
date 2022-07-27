@@ -56,7 +56,7 @@
        (values #`(pattern #,p #:do [(define-values #,explicit-attrs (let ([id id-ref] ...) (rhombus-body body-form ...)))] attr ... ...)
                (map (lambda (binding) (syntax-e (car (syntax->list binding)))) all-attrs)))]))
 
-(define-for-syntax (generate-syntax-class class-name alts)
+(define-for-syntax (generate-syntax-class class-name alts description)
   (let-values ([(patterns attributes)
                 (for/lists (patterns attributes
                                      #:result (values patterns (apply set-intersect attributes)))
@@ -64,6 +64,7 @@
                   (generate-pattern-and-attributes alt-stx))])
     (list
      #`(define-splicing-syntax-class #,class-name
+         #:description #,(syntax-e description) 
          #:datum-literals (block group quotes)
          #,@patterns)
      #`(define-syntax #,(in-syntax-class-space class-name)
@@ -76,10 +77,13 @@
         #:datum-literals (alts group quotes block pattern description)
         ;; Classname and patterns shorthand
         [(form-id class-name (alts alt ...))
-         (generate-syntax-class #'class-name (syntax->list #'(alt ...)))]
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) #'#f)]
         ;; Specify patterns with "pattern"
         [(form-id class-name
-                  (block (group pattern (alts alt ...))))
-         (generate-syntax-class #'class-name (syntax->list #'(alt ...)))]
+                  (block
+                   (~optional (group description (block (group class-desc)))
+                              #:defaults ([class-desc #'#f]))
+                   (group pattern (alts alt ...))))
+         (generate-syntax-class #'class-name (syntax->list #'(alt ...)) #'class-desc)]
         [_
          (raise-syntax-error #f "expected alternatives" stx)]))))
